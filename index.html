@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreeJs 3D Model example</title>
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    
+
+      <!-- https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script> <!-- library treeJs ที่ใช้ทำ 3d -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script> <!-- library ตัวนี้เอาไว้โหลด 3d model -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>  <!-- library เวลาคลิกที่ model แล้วจะสามารถหมุนและควบคุมมันได้ -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>  <!-- ตัวนี้ทำให้แสงที่กระทบ model สมจริงมากขึ้ -->
+
+    <script>
+        let model;
+
+        //  Scene Setup
+        const scene = new THREE.Scene(); // คำสั่งสร้าง scene
+
+        // ตัว 1 คือ Field of View คือ ขอเขตการมองเห็นในแนวตั้ง กำหนดนมุมมองของกล้องว่ากว้างแค่ไหน ยิ่งค่ามากยิ่งกว้าง
+        // ตัวที่ 2 Aspect Ratio คือ ค่าอันตราส่วนความกว้างและความสูงของกล้อง
+        // ตัวที่ 3 Near Clipping Plane ระนาบตัดภาพใกล้ คือ ระยะห่างขั้นต่ำจากกล้องที่สามารถเรนเดอร์ได้ ถ้าใกล้กว่าระยะมองเห็นก็จะมองไม่เห็น
+        // ตัวที่ 4 Far Clipping Plane ระนาบตัดภาพไกล ระยะที่กล้องสามารถแสดงวัตถุได้ ไกลเกินไปก็จะมองไม่เห็น
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); // มุมมองของกล้อง
+
+        // THREE.WebGLRenderer ตัวนี้คือ WebGL เป็น JavaScript API สำหรับลการ render 3d 
+        // ตัวนี้จะสร้างโปรแกรม render ที่จะใช้ในการ render ฉาก 3 มิติ ลงใน html 
+        // { antialias:true } ส่ง object ไปยัง constructer ของตัว render 
+        // ซี่งมันจะเปิดใช้ antialiasing จะทำให้ปรับของหยักให้เรียบ เมื่อตั้งค่า antialias:true ขอบหยับก็จะเรียบขึ้น
+        const renderer = new THREE.WebGLRenderer({ antialias:true }) 
+
+        renderer.setSize(window.innerWidth, window.innerHeight); // render ขนาด model อันนี้คือความกว้างเต็มหน้าจอ web browser
+
+        renderer.setClearColor(0xffffff); // กำหนดพื้นหลังสีขาว
+
+        document.body.appendChild(renderer.domElement); // นำ model ไป render
+
+        // OrbitControls Library ตัวที่ 3
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        // Lighting
+        const light = new THREE.AmbientLight(0xffffff, 0.5); // สร้างแสงโดยรอบของวัตถุ ส่องสว่างวัตถุอย่างเท่าเทียม โดยไม่คำนึงถึงตำแหน่งหรือทิศทางในฉากทำให้ไม่เกิดเงา
+        scene.add(light);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1) // สร้างแสงให้มีทิสทางจากทิศทางที่เรากำหนด
+        directionalLight.position.set(5, 10, 7); //กำหนดทิศทางแสดง
+        scene.add(directionalLight) // ส่งค่าแสงที่กำหนดไป
+
+
+        const hdriLoader = new THREE.RGBELoader(); // Libary ตัวที่ 4
+        hdriLoader.load("hdri/lonely_road_afternoon_puresky_1k.hdr", function (texture) {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            scene.background = texture
+            scene.envionment = texture;
+        })
+
+        // Load the 3D Model
+        const loader = new THREE.GLTFLoader();  // ใช้ library ตัวที่ 2 
+        loader.load("models/scene.gltf", function(gltf) { // เข้าถึงโฟลเดอร์ที่เตรียมไว้ 
+            model = gltf.scene // ตัวแปลที่สร้างไว้บนสุด
+            model.scale.set(150, 150, 150); // แกน x y z เซ็ตขนาดของ model
+
+            scene.add(model);
+            renderer.render(scene, camera);
+        }, undefined, function(error) {
+            console.log(error)
+        });
+
+        camera.position.set(2, 2, 5) // เซ็ตตำแหน่งกล้อง x y z
+
+        // Animation Loop อัปเดตอนิเมชัน
+        function animate() {
+            requestAnimationFrame(animate); // แจ้ง Browser ให้เรียกใช้ฟังชัน animate ฟังชันนี้ จะเป็นการสร้าง loop animate 
+
+            controls.update(); // อัปเดททำให้คลิกที่ model ได้ 
+
+            if (model) {
+                model.rotation.y += 0.001; //ทำให้มีอนิเมชันหมุนอัตโนมัติ
+                camera.lookAt(model.position) // ทำให้กล้องโฟกัส model ทำให้คลิกขวาไม่ได้ ปกติคลิกขวาแล้วจะสามารถลาก medel ไปไหนก็ได้ตรงนี้ไม่ชอบก็ไม่ต้องใส่ก็ได้
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener("resize", () => { // ดักจับ event เวลา resize หน้าจอขนาดต่าง ๆ 
+
+            // อัปเดตอัตราส่วนภาพของกล้องให้ตรงกับขนาดใหม่ของหน้าต่าง window 
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix(); // เวลาที่มีการเปลี่ยนอัตราส่วนภาพ คำสั่งนี้จะทำการอัปเดตภาพของกล้อง
+            renderer.setSize(window.innerWidth, window.innerHeight); // เซ็ตตามขนาดของ window ทั้งความกว้างและความสูง
+        })
+
+    </script>
+
+</body>
+</html>
